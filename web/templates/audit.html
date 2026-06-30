@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phantom Compliance - Audit Trail</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header"><h2>Phantom</h2><p class="tagline">Regulatory Compliance</p></div>
+    <div class="sidebar-user"><span id="sidebar-username"></span><span class="role-badge" id="sidebar-role"></span></div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer"><a href="/logout" class="nav-link logout-link">Logout</a></div>
+  </aside>
+  <main class="main-content" id="main-content">
+    <div class="page-header"><h1>Audit Trail</h1></div>
+    <div id="page-content"></div>
+  </main>
+</div>
+<script>window.__PAGE__ = "audit";</script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

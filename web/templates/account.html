@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Account Settings - Phantom Compliance</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header"><h2>Phantom</h2><p class="tagline">Regulatory Compliance</p></div>
+    <div class="sidebar-user"><span id="sidebar-username"></span><span class="role-badge" id="sidebar-role"></span></div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer"><a href="/logout" class="nav-link logout-link">Logout</a></div>
+  </aside>
+  <main class="main-content">
+    <div class="page-header"><h1>Account Settings</h1></div>
+    <div id="page-content">
+      <div id="form-error" class="form-error"></div>
+      <div id="form-success" class="alert alert-success" style="display:none"></div>
+
+      <div class="card" style="max-width:600px;margin-bottom:1.5rem">
+        <h3 style="margin-bottom:1rem">Profile</h3>
+        <div class="form-group">
+          <label>Username</label>
+          <p id="acct-username" style="font-weight:600"></p>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="acct-display">Display Name</label>
+            <input type="text" id="acct-display" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="acct-email">Email</label>
+            <input type="email" id="acct-email" class="form-control">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <p id="acct-role" style="font-weight:600"></p>
+        </div>
+        <button class="btn btn-primary" onclick="updateProfile()">Save Changes</button>
+      </div>
+
+      <div class="card" style="max-width:600px;margin-bottom:1.5rem">
+        <h3 style="margin-bottom:1rem">Security Question</h3>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem">
+          Used to reset your password if you forget it.
+        </p>
+        <div class="form-group">
+          <label for="acct-question">Security Question</label>
+          <select id="acct-question" class="form-control">
+            <option value="">-- No question --</option>
+            <option value="What was your first pet's name?">What was your first pet's name?</option>
+            <option value="What city were you born in?">What city were you born in?</option>
+            <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+            <option value="What was the name of your first school?">What was the name of your first school?</option>
+            <option value="What is your favorite book?">What is your favorite book?</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="acct-answer">Answer</label>
+          <input type="text" id="acct-answer" class="form-control" placeholder="Leave blank to keep current">
+        </div>
+        <button class="btn btn-primary" onclick="updateSecurity()">Update Security Question</button>
+      </div>
+
+      <div class="card" style="max-width:600px">
+        <h3 style="margin-bottom:1rem">Change Password</h3>
+        <div class="form-group">
+          <label for="acct-old-pw">Current Password</label>
+          <input type="password" id="acct-old-pw" class="form-control">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="acct-new-pw">New Password</label>
+            <input type="password" id="acct-new-pw" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="acct-confirm-pw">Confirm New Password</label>
+            <input type="password" id="acct-confirm-pw" class="form-control">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+async function loadAccount() {
+  const d = await (await fetch('/api/account')).json();
+  document.getElementById('acct-username').textContent = d.username;
+  document.getElementById('acct-display').value = d.display_name || '';
+  document.getElementById('acct-email').value = d.email || '';
+  document.getElementById('acct-role').textContent = d.role;
+  if (d.security_question) {
+    document.getElementById('acct-question').value = d.security_question;
+  }
+}
+async function updateProfile() {
+  const r = await fetch('/api/account/update', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      display_name: document.getElementById('acct-display').value,
+      email: document.getElementById('acct-email').value,
+    })
+  });
+  const d = await r.json();
+  if (d.ok) showSuccess('Profile updated');
+  else showError('Failed to update');
+}
+async function updateSecurity() {
+  const q = document.getElementById('acct-question').value;
+  const a = document.getElementById('acct-answer').value;
+  const r = await fetch('/api/account/update', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({security_question: q, security_answer: a})
+  });
+  const d = await r.json();
+  if (d.ok) showSuccess('Security question updated');
+  else showError('Failed to update');
+}
+async function changePassword() {
+  const old = document.getElementById('acct-old-pw').value;
+  const np = document.getElementById('acct-new-pw').value;
+  const cf = document.getElementById('acct-confirm-pw').value;
+  if (!old || !np) { showError('All fields required'); return; }
+  if (np !== cf) { showError('Passwords do not match'); return; }
+  if (np.length < 6) { showError('Password must be at least 6 characters'); return; }
+  const r = await fetch('/api/account/change-password', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({old_password: old, new_password: np, confirm_password: cf})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    showSuccess('Password changed');
+    document.getElementById('acct-old-pw').value = '';
+    document.getElementById('acct-new-pw').value = '';
+    document.getElementById('acct-confirm-pw').value = '';
+  } else showError(d.error || 'Failed');
+}
+function showSuccess(msg) {
+  const el = document.getElementById('form-success');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('form-error').textContent = '';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+function showError(msg) {
+  document.getElementById('form-error').textContent = msg;
+}
+loadAccount();
+</script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
